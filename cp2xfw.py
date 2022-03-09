@@ -28,6 +28,7 @@ with open("C:/Git/cp2xfw/sample_in.txt", 'r') as input, open("C:/Git/cp2xfw/scri
     int_name = ""
     int_state = []
     static_route_cmd = []
+    ospf_route_cmd = []
     
     for line in input:
         """
@@ -167,6 +168,8 @@ with open("C:/Git/cp2xfw/sample_in.txt", 'r') as input, open("C:/Git/cp2xfw/scri
             output.write(item + "\n")
 
     output.write("\n" + "OSPF".center(60, "#") + "\n\n")
+    if ospf_route_cmd:
+        pass
     
 
 
