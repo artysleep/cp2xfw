@@ -32,7 +32,7 @@ if __name__ == "__main__":
             """
             Назначение IP-адресов интерфейсам
             """
-            if line.startswith("set interface") and "ipv4-address" in line and "lo" not in line and "Sync not in line":
+            if line.startswith("set interface") and "ipv4-address" in line and "lo" not in line and "Sync" not in line:
                 intf = line.split()[2]
                 ip = line.split()[-3]
                 mask = line.split()[-1]
