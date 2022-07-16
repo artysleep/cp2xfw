@@ -1,3 +1,4 @@
+import json
 from sys import argv
 from needed_func import mask_transformation, enum, net_counting, ip_to_bits, bits_to_ip
 
@@ -152,6 +153,9 @@ if __name__ == "__main__":
             for item in value:
                 bond_cmd += f"{item}, "
             output.write(bond_cmd.rstrip(", ") + "\n")
+
+        with open("bond_intfs.json", "w") as json_file:
+            json.dump(bond_intd, json_file, indent=5)
         """
         Перевод интерефейсов в режим trunk
         """
@@ -169,6 +173,10 @@ if __name__ == "__main__":
             for item in value:
                 #print(f"inet ifconfig {key} vlan add {item}")
                 output.write(f"inet ifconfig {key} vlan add {item}\n")
+
+        with open("bond_intfs.json", "a") as json_file:
+            json.dump(int_vlan, json_file, indent=5)
+
         """
         Вывод на печать адресов интерфейсов
         """
@@ -237,12 +245,9 @@ if __name__ == "__main__":
         
         for item in cmdl:
             if tmpitem != item[0]:
-                #print(f"inet dhcp relay add listen-interface {item[0]}")
                 output.write(f"inet dhcp relay add listen-interface {item[0]}\n")
                 tmpitem = item[0]
-            #print(f"inet dhcp relay add external-interface {item[2]} server {item[1]}")
             output.write(f"inet dhcp relay add external-interface {item[2]} server {item[1]}\n")
-        #print(f"inet dhcp relay mode on\ninet dhcp relay start\n")
         output.write(f"inet dhcp relay mode on\ninet dhcp relay start\n")
 
     #enum("C:/Git/cp2xfw/sample_in.txt")

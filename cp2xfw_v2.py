@@ -135,6 +135,28 @@ def output_form(bonds, intfs_up, intfs_addr):
     cmds_out.append("firewall local add src @any dst @local udp dport 55777 pass")
     cmds_out.append("firewall local add src @local dst @any udp dport 55777 pass")
     cmds_out.append("firewall forward add src @any dst @any udp dport 55777 pass")
+    cmds_out.append("firewall ip-object add name @DUDE 10.9.25.86")
+    cmds_out.append("firewall ip-object add name @PRIME 10.9.25.13")
+    cmds_out.append("firewall ip-object add name @NVS 10.9.25.15")
+    cmds_out.append("firewall local add src @DUDE dst @local udp dport 161 pass")
+    cmds_out.append("firewall local add src @DUDE dst @local icmp pass")
+    cmds_out.append("firewall local add src @PRIME dst @local pass")
+    cmds_out.append("firewall local add src @NVS dst @local pass")
+
+    cmds_out.append("\n"*5 + "#"*10 + "NVS SNMP" + "#"*10)
+
+    cmds_out.append("inet snmp user add snmpuser md5")
+    cmds_out.append("inet snmp user set snmpuser key")
+    cmds_out.append("inet snmp user set snmpuser trapsess add 10.9.25.15")
+    cmds_out.append("inet snmp user set snmpuser trapsess on")
+    cmds_out.append("inet snmp v3 ro on")
+    cmds_out.append("inet snmp v3 traps on")
+    cmds_out.append("inet snmp autostart on")
+    cmds_out.append("inet snmp start")
+
+
+
+
 
     cmds_out.append("\n"*5 + "#"*10 + "IPLIR.INI" + "#"*10)
     
@@ -153,8 +175,8 @@ def output_form(bonds, intfs_up, intfs_addr):
         #print(IPv4Interface(host_addr).network[1])
         cmds_out.append("[channel]")
         cmds_out.append(f"device = {intf}")
-        cmds_out.append(f"activeip = {IPv4Interface(host_addr).network[1]} - check")
-        cmds_out.append(f"passiveip = {IPv4Address(net[0])}")
+        cmds_out.append(f"activeip = {IPv4Interface(host_addr).network[1]}/{net[2]} - check")
+        cmds_out.append(f"passiveip = {IPv4Address(net[0])}/{net[2]}")
         cmds_out.append("testip = 127.0.0.1")
         cmds_out.append(f"ident = iface-{intf.replace('.','-')}")
         cmds_out.append("checkonlyidle = yes")     
@@ -163,7 +185,7 @@ def output_form(bonds, intfs_up, intfs_addr):
     return cmds_out
 
 if __name__ == "__main__":
-    file = file_read('var-ispdn-n2.txt')
+    file = file_read('var-fw-n2.txt')
     cmds_out = []
     cmds_out = (output_form(get_bonds_intfs(file), get_up_intfs(file), get_intfs_addr(file)))
     #pprint(get_intfs_addr(file))
