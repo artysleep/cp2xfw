@@ -8,3 +8,5 @@
 *.pkg
 *.manifest
 *.spec
+*.7z
+*.pyc
