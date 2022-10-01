@@ -35,8 +35,7 @@ def get_intfs_addr(cfg):
         if match:
             ip = match.group("ip")
             cidr = match.group("mask")
-            net = ip+"/"+cidr
-            intfs_addr.update({match.group("intf") : (ip, str(IPv4Interface(net).netmask), cidr)})
+            intfs_addr.update({match.group("intf") : [ip, mask_transformation(cidr), cidr]})
     regex = (
         r"set interface eth(?P<intf>(\d|\d\.\d+))"
         r" ipv4-address (?P<ip>(\d{1,3}\.){3}\d{1,3})"
@@ -47,7 +46,7 @@ def get_intfs_addr(cfg):
         if match:
             ip = match.group("ip")
             cidr = match.group("mask")
-            intfs_addr.update({"eth"+str(int(match.group("intf"))-1) : (ip, str(IPv4Interface(net).netmask), cidr)})
+            intfs_addr.update({"eth"+str(int(match.group("intf"))-1) : [ip, mask_transformation(cidr), cidr]})
     return intfs_addr
 
 def get_up_intfs(cfg):
@@ -126,7 +125,6 @@ def get_ntp(cfg):
     return ntp_lst
 
 def get_static_routes(cfg):
-    
     regex = (r"set static-route (?P<net>(\d{1,3}\.){3}\d{1,3})\/(?P<bitmask>(\d\d)) nexthop gateway address (?P<nhop>(\d{1,3}\.){3}\d{1,3})")
     static_routes = []
     for line in cfg:
@@ -144,15 +142,27 @@ def get_def_nexthop(cfg):
         if match:
             #print(match.group("nexthop"))
             return(match.group("nexthop"))
+
+def get_cluster_addr(cfg):
+    cl_addrs = {}
+    regex = r"(?P<intf>\S+)\s+(?P<ip>(\d{1,3}\.){3}\d{1,3})"
+    for line in cfg:
+        match = re.search(regex, line)
+        if match:
+            #print(match.group("intf"), match.group("ip"))
+            cl_addrs.update({match.group("intf"): match.group("ip")})
+    return cl_addrs
     
-def output_form(ckp_name, bonds, intfs_up, intfs_addr, 
-                dhcp_rel, router_id, intf_vlan, ntp_lst, 
-                def_nh, static_routes):
+def output_form(ckp_name, bonds, intfs_up, 
+                intfs_addr, dhcp_rel, router_id, 
+                intf_vlan, ntp_lst, def_nh, 
+                static_routes, cl_addrs):
     intf_state = {}
     cmds_out = []
     cmds_out.append("#"*30+"\n")
-    cmds_out.append(f"This is Check Point {ckp_name} converted config\n")
-    cmds_out.append("Use it this output with caution!\n")
+    cmds_out.append(f"This is Check Point {ckp_name} converted config to HW5.1 Cluster\n")
+    cmds_out.append("Use it this output with caution! / Используйте, внимательно перепроверяя всё! \n")
+    cmds_out.append("Don`t forget to change Vlan 106 to 166 (with addresses) in topics INTERFACES, OSPF, IPLIR, FAILOVER")
     cmds_out.append("#"*30)
     cmds_out.append("machine hosts add 11.0.0.2 prime-kszi.corp.it.ltg.gazprom.ru")
     cmds_out.append("machine hosts add 11.0.0.2 vpn-kszi.corp.it.ltg.gazprom.ru")
@@ -184,11 +194,20 @@ def output_form(ckp_name, bonds, intfs_up, intfs_addr,
     #inet ifconfig
     cmds_out.append("\n"*2+ "#"*10 + "ADDRESSES" + "#"*10)
 
+
+    for intf in intfs_addr.keys():
+        for cl_intf in cl_addrs.keys():
+            if intf == cl_intf:
+                #print (intf, cl_intf)
+                intfs_addr[intf][0] = cl_addrs[cl_intf]
+    
+
+
     for intf in intfs_addr.keys():
         cmds_out.append(f"inet ifconfig {intf} address {' netmask '.join(intfs_addr[intf][:2])}")
     #pprint (intf_state)
     #pprint (bonds)
-    pprint(intfs_addr)
+    #pprint(intfs_addr)
 
     #inet ifcondig bond1 class trunk
     # iplir_template = "[adapter]\n"\
@@ -209,8 +228,9 @@ def output_form(ckp_name, bonds, intfs_up, intfs_addr,
     cmds_out.append("inet ospf redistribute add static")
     cmds_out.append(f"inet ospf router-id {router_id}")     
     for net in intfs_addr.values():
-        host_addr = net[0] + "/" + net[2]
-        cmds_out.append(f"inet ospf network add {IPv4Interface(host_addr).network[0]} netmask {net[1]} area 22")
+        if net[2] != "30":
+            host_addr = net[0] + "/" + net[2]
+            cmds_out.append(f"inet ospf network add {IPv4Interface(host_addr).network[0]} netmask {net[1]} area 22")
     
     #firewall basic rules
     cmds_out.append("\n"*2+ "#"*10 + "DEFAULTS RULES" + "#"*10)
@@ -234,7 +254,9 @@ def output_form(ckp_name, bonds, intfs_up, intfs_addr,
     #inet snmp 
     cmds_out.append("\n"*2+ "#"*10 + "NVS SNMP" + "#"*10)
     cmds_out.append("inet snmp user add snmpuser md5")
+    cmds_out.append("#### YOU NEED TO TYPE PASS HERE TWICE###")
     cmds_out.append("inet snmp user set snmpuser key")
+    cmds_out.append("#### AND  HERE TOO###")
     cmds_out.append("inet snmp user set snmpuser trapsess add 10.9.25.15")
     cmds_out.append("inet snmp user set snmpuser trapsess on")
     cmds_out.append("inet snmp v3 ro on")
@@ -292,24 +314,39 @@ def output_form(ckp_name, bonds, intfs_up, intfs_addr,
     cmds_out.append("\n"*2+ "#"*10 + "FAILOVER.INI" + "#"*10)
     
     for intf,net in intfs_addr.items():
-        #print(intf, IPv4Address(net[0]), net[2])
-        host_addr = net[0] + "/" + net[2]
-        #print(IPv4Interface(host_addr).network[1])
-        cmds_out.append("[channel]")
-        cmds_out.append(f"device = {intf}")
-        cmds_out.append(f"activeip = {IPv4Interface(host_addr).network[1]}/{net[2]} - check")
-        cmds_out.append(f"passiveip = {IPv4Address(net[0])}/{net[2]}")
-        cmds_out.append("testip = 127.0.0.1")
-        cmds_out.append(f"ident = iface-{intf.replace('.','-')}")
-        cmds_out.append("checkonlyidle = yes")     
-        cmds_out.append("")
+        if net[2] != "30":
+            #print(intf, IPv4Address(net[0]), net[2])
+            host_addr = net[0] + "/" + net[2]
+            #print(IPv4Interface(host_addr).network[1])
+            cmds_out.append("[channel]")
+            cmds_out.append(f"device = {intf}")
+            cmds_out.append(f"activeip = {net[0]}/{net[2]}")
+            #cmds_out.append(f"activeip = {IPv4Interface(host_addr).network[1]}/{net[2]} - check") #this is just for xfw
+            #cmds_out.append(f"passiveip = {IPv4Address(net[0])}/{net[2]}") #this is just for xfw
+            cmds_out.append("testip = 127.0.0.1")
+            cmds_out.append(f"ident = iface-{intf.replace('.','-')}")
+            cmds_out.append("checkonlyidle = yes")     
+            cmds_out.append("")
+        else: 
+            cmds_out.append("################### FOR N1 ###################")
+            cmds_out.append("[sendconfig]")
+            cmds_out.append(f"device = {intf}")
+            cmds_out.append(f"activeip = {IPv4Address(net[0])+1}")
+            cmds_out.append("################### FOR N2 ###################")
+            cmds_out.append("[sendconfig]")
+            cmds_out.append(f"device = {intf}")
+            cmds_out.append(f"activeip = {IPv4Address(net[0])}")
+
 
     return cmds_out
 
 if __name__ == "__main__":
-    #input_file = argv[1]
-    input_file = "var-fw-n2.txt"
+    input_file = argv[1]
+    input_file2 = argv[2]
+    # input_file = "nov-fw-n1.txt"
+    # input_file2 = "nov-fw-cphaprob.txt"
     file = file_read(input_file)
+    cl_addr_file = file_read(input_file2)
     input_file = input_file.strip(".\\").split(".")[0]
     #cmds_out = [f"This is Check Point {input_file} converted config\n", "Use it this output with caution!\n"]
     cmds_out = output_form(input_file, 
@@ -321,7 +358,8 @@ if __name__ == "__main__":
                             get_intf_vlans(file), 
                             get_ntp(file), 
                             get_def_nexthop(file),
-                            get_static_routes(file))
+                            get_static_routes(file),
+                            get_cluster_addr(cl_addr_file))
     #pprint(get_dhcp_relay(file))
     #pprint(get_intfs_addr(file))
     #pprint(cmds_out)
