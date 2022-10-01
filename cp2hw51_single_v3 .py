@@ -44,7 +44,7 @@ def file_read(file):
                 result.append(line)
         else:
             result.append(line)
-    pprint(result)
+    #pprint(result)
     return result
 
 
@@ -372,9 +372,9 @@ def output_form(ckp_name, bonds, intfs_up,
     return cmds_out
 
 if __name__ == "__main__":
-    #input_file = argv[1]
+    input_file = argv[1]
     #input_file2 = argv[2]
-    input_file = "vld nov\\vld-bt-fw.txt"
+    #input_file = "vld nov\\vld-bt-fw.txt"
     # input_file2 = "nov-fw-cphaprob.txt"
     file = file_read(input_file)
     #cl_addr_file = file_read(input_file2)

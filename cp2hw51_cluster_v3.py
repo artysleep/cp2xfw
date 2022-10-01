@@ -13,10 +13,38 @@ from ipaddress import IPV4LENGTH, IPv4Address, IPv4Interface, IPv4Network
 
 def file_read(file):
     #with open(argv[1], 'r') as cfg:
-    result = []
+    raw_list, result = [], []
     with open(file, 'r') as cfg:
         for line in cfg:
-            result.append(line.rstrip())
+            raw_list.append(line.rstrip())
+    for line in raw_list:
+        if "External" in line:
+                line = line.replace("External", "eth0")
+                result.append(line)
+        elif "Internal" in line:
+                line = line.replace("Internal", "eth1")
+                result.append(line)
+        elif "DMZ" in line:
+                line = line.replace("DMZ", "eth2")
+                result.append(line)
+        elif "Sync" in line:
+                line = line.replace("Sync", "eth6")
+                result.append(line)
+        elif "Lan1" in line:
+                line = line.replace("DMZ", "eth3")
+                result.append(line)
+        elif "Lan2" in line:
+                line = line.replace("Sync", "eth4")
+                result.append(line)
+        elif "Lan3" in line:
+                line = line.replace("Sync", "eth5")
+                result.append(line)
+        elif "Mgmt" in line:
+                line = line.replace("Sync", "eth5")
+                result.append(line)
+        else:
+            result.append(line)
+    #pprint(result)
     return result
 
 
