@@ -234,7 +234,7 @@ def output_form(ckp_name, bonds, intfs_up,
     
     #firewall basic rules
     cmds_out.append("\n"*2+ "#"*10 + "DEFAULTS RULES" + "#"*10)
-    cmds_out.append("firewall ip-object add name @ADMINS_OIB 10.9.25.64/28, 10.9.17.98")
+    cmds_out.append("firewall ip-object add name @ADMINS_OIB 10.9.25.64/28,10.9.17.98")
     cmds_out.append("firewall ip-object add name @DUDE 10.9.25.86")
     cmds_out.append("firewall ip-object add name @PRIME 10.9.25.13")
     cmds_out.append("firewall ip-object add name @NVS 10.9.25.15")
@@ -248,6 +248,7 @@ def output_form(ckp_name, bonds, intfs_up,
     cmds_out.append("firewall local add 6 rule \"DUDE ICMP\" src @DUDE dst @local icmp pass")
     cmds_out.append("firewall local add 7 rule \"PRIME\" src @PRIME dst @local pass")
     cmds_out.append("firewall local add 8 rule \"NVS\" src @NVS dst @local pass")
+    cmds_out.append("firewall vpn add src @local dst <идентификатор_узла_prime> tcp dport 48080 pass")
     # cmds_out.append("firewall forward add 1 rule \"ViPNet 55777 forward\" src @any dst @any udp dport 55777 pass")
     # cmds_out.append("firewall vpn add 1 rule \"OSPF vpn\" src @any dst @any service @OSPF pass")
 
@@ -290,7 +291,7 @@ def output_form(ckp_name, bonds, intfs_up,
                     if IPv4Address(value) in net.hosts():
                         cmds_out.append(f"inet dhcp relay {iter} add backup-interface {intf} server {value}")
                         #pprint (f"inet dhcp relay {iter} add backup-interface {intf} server {value}")
-                        cmds_out.append(f"inet dhcp relay {iter} mode on")
+                        cmds_out.append(f"inet dhcp relay mode on")
                         cmds_out.append(f"inet dhcp relay {iter} start")
                 iter+=1 
    
