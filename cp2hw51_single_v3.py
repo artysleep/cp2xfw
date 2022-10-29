@@ -2,9 +2,7 @@ import cmd
 import ipaddress
 from sys import argv
 
-from pyparsing import Regex
 from needed_func import mask_transformation, enum, net_counting, ip_to_bits, bits_to_ip
-import textfsm
 import re
 from pprint import pprint
 from ipaddress import IPV4LENGTH, IPv4Address, IPv4Interface, IPv4Network
@@ -251,7 +249,7 @@ def output_form(ckp_name, bonds, intfs_up,
     cmds_out.append(f"inet route add default next-hop {def_nh}")
 
     for route in static_routes:
-        cmds_out.append(f"inet route add {route[0]} netmask {mask_transformation(route[1])} nexthop {route[2]}")
+        cmds_out.append(f"inet route add {route[0]} netmask {mask_transformation(route[1])} next-hop {route[2]}")
 
     #inet ospf
     cmds_out.append("\n"*2+ "#"*10 + "OSPF" + "#"*10)
@@ -265,7 +263,7 @@ def output_form(ckp_name, bonds, intfs_up,
     
     #firewall basic rules
     cmds_out.append("\n"*2+ "#"*10 + "DEFAULTS RULES" + "#"*10)
-    cmds_out.append("firewall ip-object add name @ADMINS_OIB 10.9.25.64/28, 10.9.17.98")
+    cmds_out.append("firewall ip-object add name @ADMINS_OIB 10.9.25.64/28,10.9.17.98")
     cmds_out.append("firewall ip-object add name @DUDE 10.9.25.86")
     cmds_out.append("firewall ip-object add name @PRIME 10.9.25.13")
     cmds_out.append("firewall ip-object add name @NVS 10.9.25.15")
@@ -281,6 +279,7 @@ def output_form(ckp_name, bonds, intfs_up,
     cmds_out.append("firewall local add 8 rule \"NVS\" src @NVS dst @local pass")
     # cmds_out.append("firewall forward add 1 rule \"ViPNet 55777 forward\" src @any dst @any udp dport 55777 pass")
     # cmds_out.append("firewall vpn add 1 rule \"OSPF vpn\" src @any dst @any service @OSPF pass")
+    cmds_out.append("firewall vpn add src @local dst 0x34890002 tcp dport 48080 pass")
 
     #inet snmp 
     cmds_out.append("\n"*2+ "#"*10 + "NVS SNMP" + "#"*10)
@@ -321,7 +320,7 @@ def output_form(ckp_name, bonds, intfs_up,
                     if IPv4Address(value) in net.hosts():
                         cmds_out.append(f"inet dhcp relay {iter} add backup-interface {intf} server {value}")
                         #pprint (f"inet dhcp relay {iter} add backup-interface {intf} server {value}")
-                        cmds_out.append(f"inet dhcp relay {iter} mode on")
+                        cmds_out.append(f"inet dhcp relay mode on")
                         cmds_out.append(f"inet dhcp relay {iter} start")
                 iter+=1 
    
@@ -331,6 +330,7 @@ def output_form(ckp_name, bonds, intfs_up,
         cmds_out.append(f"inet ntp add server {item}") 
     cmds_out.append("inet ntp mode on")
     cmds_out.append("inet ntp start")
+    cmds_out.append("machine set timezone Europe/Moscow")
 
     #IPLIR.INI
     cmds_out.append("\n"*2+ "#"*10 + "IPLIR.INI" + "#"*10)
