@@ -2,9 +2,7 @@ import cmd
 import ipaddress
 from sys import argv
 
-from pyparsing import Regex
 from needed_func import mask_transformation, enum, net_counting, ip_to_bits, bits_to_ip
-import textfsm
 import re
 from pprint import pprint
 from ipaddress import IPV4LENGTH, IPv4Address, IPv4Interface, IPv4Network
@@ -13,10 +11,38 @@ from ipaddress import IPV4LENGTH, IPv4Address, IPv4Interface, IPv4Network
 
 def file_read(file):
     #with open(argv[1], 'r') as cfg:
-    result = []
+    raw_list, result = [], []
     with open(file, 'r') as cfg:
         for line in cfg:
-            result.append(line.rstrip())
+            raw_list.append(line.rstrip())
+    for line in raw_list:
+        if "External" in line:
+                line = line.replace("External", "eth0")
+                result.append(line)
+        elif "Internal" in line:
+                line = line.replace("Internal", "eth1")
+                result.append(line)
+        elif "DMZ" in line:
+                line = line.replace("DMZ", "eth2")
+                result.append(line)
+        elif "Sync" in line:
+                line = line.replace("Sync", "eth6")
+                result.append(line)
+        elif "Lan1" in line:
+                line = line.replace("DMZ", "eth3")
+                result.append(line)
+        elif "Lan2" in line:
+                line = line.replace("Sync", "eth4")
+                result.append(line)
+        elif "Lan3" in line:
+                line = line.replace("Sync", "eth5")
+                result.append(line)
+        elif "Mgmt" in line:
+                line = line.replace("Sync", "eth5")
+                result.append(line)
+        else:
+            result.append(line)
+    #pprint(result)
     return result
 
 
@@ -220,7 +246,7 @@ def output_form(ckp_name, bonds, intfs_up,
     cmds_out.append(f"inet route add default next-hop {def_nh}")
 
     for route in static_routes:
-        cmds_out.append(f"inet route add {route[0]} netmask {mask_transformation(route[1])} nexthop {route[2]}")
+        cmds_out.append(f"inet route add {route[0]} netmask {mask_transformation(route[1])} next-hop {route[2]}")
 
     #inet ospf
     cmds_out.append("\n"*2+ "#"*10 + "OSPF" + "#"*10)
@@ -251,6 +277,7 @@ def output_form(ckp_name, bonds, intfs_up,
     cmds_out.append("firewall vpn add src @local dst <идентификатор_узла_prime> tcp dport 48080 pass")
     # cmds_out.append("firewall forward add 1 rule \"ViPNet 55777 forward\" src @any dst @any udp dport 55777 pass")
     # cmds_out.append("firewall vpn add 1 rule \"OSPF vpn\" src @any dst @any service @OSPF pass")
+    cmds_out.append("firewall vpn add src @local dst 0x34890002 tcp dport 48080 pass")
 
     #inet snmp 
     cmds_out.append("\n"*2+ "#"*10 + "NVS SNMP" + "#"*10)
